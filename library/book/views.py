@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db.models import Q
 from .models import Book
 from author.models import Author
-from authentication.models import CustomUser
+from authentication.models import CustomUser, ROLE_LIBRARIAN
 from order.models import Order
 
 
@@ -45,10 +45,10 @@ def book_detail(request: HttpRequest, book_id: int) -> HttpResponse:
 
 
 def book_create(request: HttpRequest) -> HttpResponse:
-    # Only for librarian (role == 1)
+    # Only for librarian
     if not request.user.is_authenticated:
         return redirect('login')
-    if getattr(request.user, 'role', None) != 1:
+    if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
         return redirect('home')
 
     authors = Author.objects.all().order_by('surname', 'name')
@@ -57,15 +57,15 @@ def book_create(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
         description = request.POST.get('description', '').strip()
-        count = request.POST.get('count', '10').strip()
+        count = request.POST.get('count', str(Book.DEFAULT_COUNT)).strip()
         selected_authors_ids = request.POST.getlist('authors')
 
         if not name:
             error = 'Book name is required.'
-        elif len(name) > 128:
-            error = 'Book name cannot exceed 128 characters.'
-        elif len(description) > 256:
-            error = 'Description cannot exceed 256 characters.'
+        elif len(name) > Book.NAME_MAX_LEN:
+            error = f'Book name cannot exceed {Book.NAME_MAX_LEN} characters.'
+        elif len(description) > Book.DESCRIPTION_MAX_LEN:
+            error = f'Description cannot exceed {Book.DESCRIPTION_MAX_LEN} characters.'
         elif not count.isdigit() or int(count) < 0:
             error = 'Count must be a positive integer.'
         else:
@@ -81,7 +81,10 @@ def book_create(request: HttpRequest) -> HttpResponse:
     return render(request, 'book/book_create.html', {
         'authors': authors,
         'error': error,
-        'form_data': request.POST if request.method == 'POST' else {}
+        'form_data': request.POST if request.method == 'POST' else {},
+        'name_max_len': Book.NAME_MAX_LEN,
+        'desc_max_len': Book.DESCRIPTION_MAX_LEN,
+        'default_count': Book.DEFAULT_COUNT,
     })
 
 
@@ -89,7 +92,7 @@ def books_by_user(request: HttpRequest, user_id: int) -> HttpResponse:
     # Only for librarian
     if not request.user.is_authenticated:
         return redirect('login')
-    if getattr(request.user, 'role', None) != 1:
+    if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
         return redirect('home')
 
     target_user = get_object_or_404(CustomUser, pk=user_id)

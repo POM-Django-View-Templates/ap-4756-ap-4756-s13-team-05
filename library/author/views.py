@@ -1,6 +1,7 @@
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from authentication.models import ROLE_LIBRARIAN
 from .models import Author
 
 
@@ -8,7 +9,7 @@ def author_list(request: HttpRequest) -> HttpResponse:
     # Check role
     if not request.user.is_authenticated:
         return redirect('login')
-    if getattr(request.user, 'role', None) != 1:
+    if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
         return redirect('home')
 
     authors = Author.objects.prefetch_related('books').all().order_by('id')
@@ -18,7 +19,7 @@ def author_list(request: HttpRequest) -> HttpResponse:
 def author_create(request: HttpRequest) -> HttpResponse:
     if not request.user.is_authenticated:
         return redirect('login')
-    if getattr(request.user, 'role', None) != 1:
+    if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
         return redirect('home')
 
     error = None
@@ -30,22 +31,29 @@ def author_create(request: HttpRequest) -> HttpResponse:
         # Validation
         if not name or not surname or not patronymic:
             error = 'All fields (Name, Surname, Middle name) are required.'
-        elif len(name) > 20 or len(surname) > 20 or len(patronymic) > 20:
-            error = 'Field length cannot exceed 20 characters.'
+        elif (
+            len(name) > Author.NAME_MAX_LEN
+            or len(surname) > Author.SURNAME_MAX_LEN
+            or len(patronymic) > Author.PATRONYMIC_MAX_LEN
+        ):
+            error = f'Field length cannot exceed {Author.NAME_MAX_LEN} characters.'
         else:
             Author.create(name=name, surname=surname, patronymic=patronymic)
             return redirect('author_list')
 
     return render(request, 'author/author_create.html', {
         'error': error,
-        'form_data': request.POST if request.method == 'POST' else {}
+        'form_data': request.POST if request.method == 'POST' else {},
+        'name_max_len': Author.NAME_MAX_LEN,
+        'surname_max_len': Author.SURNAME_MAX_LEN,
+        'patronymic_max_len': Author.PATRONYMIC_MAX_LEN,
     })
 
 
 def author_delete(request: HttpRequest, author_id: int) -> HttpResponse:
     if not request.user.is_authenticated:
         return redirect('login')
-    if getattr(request.user, 'role', None) != 1:
+    if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
         return redirect('home')
 
     if request.method == 'POST':

@@ -20,6 +20,8 @@ class Order(models.Model):
            param plated_end_at: Describes the planned return period of the book (2 weeks from the moment of creation).
            type plated_end_at: int (timestamp)
        """
+    SINGLE_COPY_LIMIT = 1
+
     book = models.ForeignKey(Book, on_delete=models.CASCADE, default=None)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, default=None)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -75,7 +77,7 @@ class Order(models.Model):
         for order in orders:
             if not order.end_at:
                 books.add(order.book.id)
-        if book.id in books and book.count == 1:
+        if book.id in books and book.count <= Order.SINGLE_COPY_LIMIT:
             return None
         try:
             order = Order(user=user, book=book, plated_end_at=plated_end_at)

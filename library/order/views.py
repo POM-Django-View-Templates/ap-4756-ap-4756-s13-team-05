@@ -3,8 +3,13 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
+from authentication.models import ROLE_LIBRARIAN
 from .models import Order
 from book.models import Book
+
+DEFAULT_BORROW_DAYS = 14
+MIN_BORROW_DAYS = 1
+MAX_BORROW_DAYS = 30
 
 
 def order_my(request: HttpRequest) -> HttpResponse:
@@ -19,7 +24,7 @@ def order_all(request: HttpRequest) -> HttpResponse:
     if not request.user.is_authenticated:
         return redirect('login')
     # For librarian only
-    if getattr(request.user, 'role', None) != 1:
+    if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
         return redirect('home')
 
     orders = Order.objects.select_related('user', 'book').all().order_by('-created_at')
@@ -44,13 +49,13 @@ def order_create(request: HttpRequest, book_id: int) -> HttpResponse:
         return redirect('book_detail', book_id=book.id)
 
     if request.method == 'POST':
-        days = request.POST.get('days', '14')
+        days = request.POST.get('days', str(DEFAULT_BORROW_DAYS))
         try:
             days_count = int(days)
-            if days_count < 1 or days_count > 30:
-                days_count = 14
+            if days_count < MIN_BORROW_DAYS or days_count > MAX_BORROW_DAYS:
+                days_count = DEFAULT_BORROW_DAYS
         except ValueError:
-            days_count = 14
+            days_count = DEFAULT_BORROW_DAYS
 
         plated_end_at = timezone.now() + datetime.timedelta(days=days_count)
 
@@ -63,14 +68,17 @@ def order_create(request: HttpRequest, book_id: int) -> HttpResponse:
 
     return render(request, 'order/order_create.html', {
         'book': book,
-        'default_date': (timezone.now() + datetime.timedelta(days=14)).strftime('%Y-%m-%d'),
+        'default_date': (timezone.now() + datetime.timedelta(days=DEFAULT_BORROW_DAYS)).strftime('%Y-%m-%d'),
+        'default_days': DEFAULT_BORROW_DAYS,
+        'min_days': MIN_BORROW_DAYS,
+        'max_days': MAX_BORROW_DAYS,
     })
 
 
 def order_close(request: HttpRequest, order_id: int) -> HttpResponse:
     if not request.user.is_authenticated:
         return redirect('login')
-    if getattr(request.user, 'role', None) != 1:
+    if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
         return redirect('home')
 
     if request.method == 'POST':

@@ -15,9 +15,13 @@ class Book(models.Model):
         param authors: list of Authors
         type authors: list->Author
     """
-    name = models.CharField(blank=True, max_length=128)
-    description = models.CharField(blank=True, max_length=256)
-    count = models.IntegerField(default=10)
+    NAME_MAX_LEN = 128
+    DESCRIPTION_MAX_LEN = 256
+    DEFAULT_COUNT = 10
+
+    name = models.CharField(blank=True, max_length=NAME_MAX_LEN)
+    description = models.CharField(blank=True, max_length=DESCRIPTION_MAX_LEN)
+    count = models.IntegerField(default=DEFAULT_COUNT)
     id = models.AutoField(primary_key=True)
 
     @property
@@ -60,7 +64,7 @@ class Book(models.Model):
         return True
 
     @staticmethod
-    def create(name, description, count=10, authors=None):
+    def create(name, description, count=DEFAULT_COUNT, authors=None):
         """
         param name: Describes name of the book
         type name: str max_length=128
@@ -72,7 +76,7 @@ class Book(models.Model):
         type authors: list->Author
         :return: a new book object which is also written into the DB
         """
-        if len(name) > 128:
+        if len(name) > Book.NAME_MAX_LEN:
             return None
 
         book = Book()

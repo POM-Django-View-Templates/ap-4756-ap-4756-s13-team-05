@@ -11,7 +11,7 @@
                 Welcome back, {{ request.user.first_name|default:request.user.email }}! 👋
             </h1>
             <p class="text-slate-500 mt-1">
-                {% if request.user.role == 1 %}
+                {% if request.user.is_librarian %}
                     You have administrative access as a <span class="font-semibold text-purple-600">Librarian</span>. You can manage books, authors, users, and orders.
                 {% else %}
                     You are logged in as a <span class="font-semibold text-blue-600">Reader</span>. Explore books in our collection and track your borrowed items.
@@ -19,7 +19,7 @@
             </p>
         </div>
         <div>
-            {% if request.user.role == 1 %}
+            {% if request.user.is_librarian %}
                 <a href="{% url 'book_create' %}" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
                     + Add New Book
                 </a>
@@ -44,7 +44,7 @@
             <p class="text-slate-500 text-sm mt-1">Search, filter and discover all available books in the library.</p>
         </a>
 
-        {% if request.user.role == 0 %}
+        {% if request.user.is_visitor %}
             <!-- My Orders Card for Reader -->
             <a href="{% url 'order_my' %}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md transition group">
                 <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
@@ -57,7 +57,7 @@
             </a>
         {% endif %}
 
-        {% if request.user.role == 1 %}
+        {% if request.user.is_librarian %}
             <!-- Authors Card for Librarian -->
             <a href="{% url 'author_list' %}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md transition group">
                 <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition">

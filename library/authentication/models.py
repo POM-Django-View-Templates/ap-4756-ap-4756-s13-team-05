@@ -3,9 +3,12 @@ import datetime
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 
+ROLE_VISITOR = 0
+ROLE_LIBRARIAN = 1
+
 ROLE_CHOICES = (
-    (0, 'visitor'),
-    (1, 'librarian'),
+    (ROLE_VISITOR, 'visitor'),
+    (ROLE_LIBRARIAN, 'librarian'),
 )
 
 
@@ -34,7 +37,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('role', 1)
+        extra_fields.setdefault('role', ROLE_LIBRARIAN)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError(('Superuser must have is_staff=True.'))
@@ -67,19 +70,37 @@ class CustomUser(AbstractBaseUser):
         param is_active: user role, default value False
         type updated_at: bool
     """
-    first_name = models.CharField(max_length=20, default=None)
-    last_name = models.CharField(max_length=20, default=None)
-    middle_name = models.CharField(max_length=20, default=None)
-    email = models.CharField(max_length=100, unique=True, default=None)
-    password = models.CharField(default=None, max_length=255)
+    ROLE_VISITOR = ROLE_VISITOR
+    ROLE_LIBRARIAN = ROLE_LIBRARIAN
+
+    FIRST_NAME_MAX_LEN = 20
+    LAST_NAME_MAX_LEN = 20
+    MIDDLE_NAME_MAX_LEN = 20
+    EMAIL_MAX_LEN = 100
+    PASSWORD_MAX_LEN = 255
+    EMAIL_PARTS_COUNT = 2
+
+    first_name = models.CharField(max_length=FIRST_NAME_MAX_LEN, default=None)
+    last_name = models.CharField(max_length=LAST_NAME_MAX_LEN, default=None)
+    middle_name = models.CharField(max_length=MIDDLE_NAME_MAX_LEN, default=None)
+    email = models.CharField(max_length=EMAIL_MAX_LEN, unique=True, default=None)
+    password = models.CharField(default=None, max_length=PASSWORD_MAX_LEN)
     created_at = models.DateTimeField(editable=False, auto_now=datetime.datetime.now())
     updated_at = models.DateTimeField(auto_now=datetime.datetime.now())
-    role = models.IntegerField(choices=ROLE_CHOICES, default=0)
+    role = models.IntegerField(choices=ROLE_CHOICES, default=ROLE_VISITOR)
     is_active = models.BooleanField(default=False)
     id = models.AutoField(primary_key=True)
 
     USERNAME_FIELD = 'email'
     objects = CustomUserManager()
+
+    @property
+    def is_librarian(self):
+        return self.role == self.ROLE_LIBRARIAN
+
+    @property
+    def is_visitor(self):
+        return self.role == self.ROLE_VISITOR
 
     def __str__(self):
         """
@@ -145,8 +166,14 @@ class CustomUser(AbstractBaseUser):
         :type password: str
         :return: a new user object which is also written into the DB
         """
-        if len(first_name) <= 20 and len(middle_name) <= 20 and len(last_name) <= 20 and len(email) <= 100 and len(
-                email.split('@')) == 2 and len(CustomUser.objects.filter(email=email)) == 0:
+        if (
+            len(first_name) <= CustomUser.FIRST_NAME_MAX_LEN
+            and len(middle_name) <= CustomUser.MIDDLE_NAME_MAX_LEN
+            and len(last_name) <= CustomUser.LAST_NAME_MAX_LEN
+            and len(email) <= CustomUser.EMAIL_MAX_LEN
+            and len(email.split('@')) == CustomUser.EMAIL_PARTS_COUNT
+            and len(CustomUser.objects.filter(email=email)) == 0
+        ):
             custom_user = CustomUser(email=email, password=password, first_name=first_name, middle_name=middle_name,
                                      last_name=last_name)
             custom_user.save()
@@ -204,11 +231,11 @@ class CustomUser(AbstractBaseUser):
         :return: None
         """
         user_to_update = CustomUser.objects.filter(email=self.email).first()
-        if first_name != None and len(first_name) <= 20:
+        if first_name != None and len(first_name) <= CustomUser.FIRST_NAME_MAX_LEN:
             user_to_update.first_name = first_name
-        if last_name != None and len(last_name) <= 20:
+        if last_name != None and len(last_name) <= CustomUser.LAST_NAME_MAX_LEN:
             user_to_update.last_name = last_name
-        if middle_name != None and len(middle_name) <= 20:
+        if middle_name != None and len(middle_name) <= CustomUser.MIDDLE_NAME_MAX_LEN:
             user_to_update.middle_name = middle_name
         if password != None:
             user_to_update.password = password
@@ -229,4 +256,4 @@ class CustomUser(AbstractBaseUser):
         """
         returns str role name
         """
-        return ROLE_CHOICES[self.role][1]
+        return dict(ROLE_CHOICES).get(self.role, str(self.role))

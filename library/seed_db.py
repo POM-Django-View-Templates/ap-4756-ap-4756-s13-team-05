@@ -8,10 +8,15 @@ from django.utils import timezone
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'library.settings')
 django.setup()
 
-from authentication.models import CustomUser
+from authentication.models import CustomUser, ROLE_VISITOR, ROLE_LIBRARIAN
 from author.models import Author
 from book.models import Book
 from order.models import Order
+
+DEFAULT_BORROW_DAYS = 14
+SHORT_BORROW_DAYS = 10
+CLOSED_ORDER_PLATED_DAYS_AGO = 5
+CLOSED_ORDER_END_DAYS_AGO = 2
 
 
 def seed_data():
@@ -25,7 +30,7 @@ def seed_data():
             "first_name": "Anna",
             "middle_name": "Ivanivna",
             "last_name": "Kovalenko",
-            "role": 1,
+            "role": ROLE_LIBRARIAN,
         },
         {
             "email": "reader@library.com",
@@ -33,7 +38,7 @@ def seed_data():
             "first_name": "Oleh",
             "middle_name": "Petrovych",
             "last_name": "Melnyk",
-            "role": 0,
+            "role": ROLE_VISITOR,
         },
         {
             "email": "alice@library.com",
@@ -41,7 +46,7 @@ def seed_data():
             "first_name": "Alice",
             "middle_name": "Marie",
             "last_name": "Smith",
-            "role": 0,
+            "role": ROLE_VISITOR,
         },
         {
             "email": "bob@library.com",
@@ -49,7 +54,7 @@ def seed_data():
             "first_name": "Bob",
             "middle_name": "John",
             "last_name": "Williams",
-            "role": 0,
+            "role": ROLE_VISITOR,
         },
     ]
 
@@ -186,7 +191,7 @@ def seed_data():
             Order.objects.create(
                 user=reader_user,
                 book=created_books["Kobzar"],
-                plated_end_at=now + datetime.timedelta(days=14),
+                plated_end_at=now + datetime.timedelta(days=DEFAULT_BORROW_DAYS),
                 end_at=None
             )
             print("  + Created active order for reader@library.com: 'Kobzar'")
@@ -197,7 +202,7 @@ def seed_data():
             Order.objects.create(
                 user=alice_user,
                 book=created_books["1984"],
-                plated_end_at=now + datetime.timedelta(days=10),
+                plated_end_at=now + datetime.timedelta(days=SHORT_BORROW_DAYS),
                 end_at=None
             )
             print("  + Created active order for alice@library.com: '1984'")
@@ -208,8 +213,8 @@ def seed_data():
             Order.objects.create(
                 user=bob_user,
                 book=created_books["Clean Code: A Handbook of Agile Software Craftsmanship"],
-                plated_end_at=now - datetime.timedelta(days=5),
-                end_at=now - datetime.timedelta(days=2)
+                plated_end_at=now - datetime.timedelta(days=CLOSED_ORDER_PLATED_DAYS_AGO),
+                end_at=now - datetime.timedelta(days=CLOSED_ORDER_END_DAYS_AGO)
             )
             print("  + Created closed order for bob@library.com: 'Clean Code'")
 

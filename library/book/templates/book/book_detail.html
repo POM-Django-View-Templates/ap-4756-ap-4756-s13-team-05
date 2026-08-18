@@ -71,7 +71,7 @@
             </a>
 
             <div>
-                {% if request.user.role == 0 %}
+                {% if request.user.is_visitor %}
                     {% if book.available_count > 0 %}
                         <a href="{% url 'order_create' book.id %}" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow-sm transition">
                             Borrow This Book

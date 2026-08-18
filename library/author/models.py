@@ -15,9 +15,13 @@ class Author(models.Model):
         param patronymic: Describes middle name of the author
         type patronymic: str max_length=20
     """
-    name = models.CharField(blank=True, max_length=20)
-    surname = models.CharField(blank=True, max_length=20)
-    patronymic = models.CharField(blank=True, max_length=20)
+    NAME_MAX_LEN = 20
+    SURNAME_MAX_LEN = 20
+    PATRONYMIC_MAX_LEN = 20
+
+    name = models.CharField(blank=True, max_length=NAME_MAX_LEN)
+    surname = models.CharField(blank=True, max_length=SURNAME_MAX_LEN)
+    patronymic = models.CharField(blank=True, max_length=PATRONYMIC_MAX_LEN)
     books = models.ManyToManyField(book.models.Book, related_name='authors')
     id = models.AutoField(primary_key=True)
 
@@ -75,7 +79,11 @@ class Author(models.Model):
         type patronymic: str max_length=20
         :return: a new author object which is also written into the DB
         """
-        if name and len(name) <= 20 and surname and len(surname) <= 20 and patronymic and len(patronymic) <= 20:
+        if (
+            name and len(name) <= Author.NAME_MAX_LEN
+            and surname and len(surname) <= Author.SURNAME_MAX_LEN
+            and patronymic and len(patronymic) <= Author.PATRONYMIC_MAX_LEN
+        ):
             author = Author(name=name, surname=surname, patronymic=patronymic)
             author.save()
             return author
@@ -108,11 +116,11 @@ class Author(models.Model):
         :return: None
         """
 
-        if name and len(name) <= 20:
+        if name and len(name) <= Author.NAME_MAX_LEN:
             self.name = name
-        if surname and len(surname) <= 20:
+        if surname and len(surname) <= Author.SURNAME_MAX_LEN:
             self.surname = surname
-        if patronymic and len(patronymic) <= 20:
+        if patronymic and len(patronymic) <= Author.PATRONYMIC_MAX_LEN:
             self.patronymic = patronymic
         self.save()
 
