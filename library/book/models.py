@@ -20,6 +20,11 @@ class Book(models.Model):
     count = models.IntegerField(default=10)
     id = models.AutoField(primary_key=True)
 
+    @property
+    def available_count(self):
+        active_orders = self.order_set.filter(end_at__isnull=True).count()
+        return max(0, self.count - active_orders)
+
     def __str__(self):
         """
         Magic method is redefined to show all information about Book.

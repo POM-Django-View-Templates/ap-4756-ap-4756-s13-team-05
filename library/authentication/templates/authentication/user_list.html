@@ -1,48 +1,68 @@
 {% extends 'base.html' %}
 
-{% block title %}Users List - Library{% endblock %}
+{% block title %}Users Management - Library{% endblock %}
 
 {% block content %}
-<h1>All Users</h1>
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">User Accounts</h1>
+            <p class="text-slate-500 text-sm mt-1">View registered readers and library staff</p>
+        </div>
+    </div>
 
-{% if users %}
-<table border="1" cellpadding="6" cellspacing="0">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Email</th>
-            <th>Full Name</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in users %}
-        <tr>
-            <td>{{ user.id }}</td>
-            <td><strong>{{ user.email }}</strong></td>
-            <td>{{ user.first_name }} {{ user.middle_name }} {{ user.last_name }}</td>
-            <td>
-                {% if user.role == 1 %}
-                <strong>Librarian</strong>
-                {% else %}
-                Reader
-                {% endif %}
-            </td>
-            <td>
-                {% if user.is_active %}Active{% else %}Inactive{% endif %}
-            </td>
-            <td>
-                <a href="{% url 'user_detail' user.id %}">View Profile</a>
-                |
-                <a href="{% url 'books_by_user' user.id %}">View Borrowed Books</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No users found.</p>
-{% endif %}
+    {% if users %}
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4">ID</th>
+                            <th class="px-6 py-4">User</th>
+                            <th class="px-6 py-4">Full Name</th>
+                            <th class="px-6 py-4">Role</th>
+                            <th class="px-6 py-4">Status</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for user in users %}
+                            <tr class="hover:bg-slate-50/75 transition">
+                                <td class="px-6 py-4 font-mono text-xs text-slate-400">#{{ user.id }}</td>
+                                <td class="px-6 py-4 font-medium text-slate-900">{{ user.email }}</td>
+                                <td class="px-6 py-4 text-slate-600">{{ user.first_name }} {{ user.middle_name }} {{ user.last_name }}</td>
+                                <td class="px-6 py-4">
+                                    {% if user.role == 1 %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">Librarian</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Reader</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if user.is_active %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Active</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-right space-x-2">
+                                    <a href="{% url 'user_detail' user.id %}" class="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition">
+                                        Profile
+                                    </a>
+                                    <a href="{% url 'books_by_user' user.id %}" class="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium rounded-lg transition">
+                                        Borrowed Books
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 text-slate-500">
+            No user accounts found.
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

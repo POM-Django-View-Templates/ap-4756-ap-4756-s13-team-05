@@ -3,19 +3,35 @@
 {% block title %}Order Book - Library{% endblock %}
 
 {% block content %}
-<h1>Order Book: {{ book.name }}</h1>
+<div class="max-w-xl mx-auto space-y-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div class="mb-6">
+            <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Borrow Book</span>
+            <h1 class="text-2xl font-bold text-slate-900 mt-1">{{ book.name }}</h1>
+            <p class="text-slate-500 text-sm mt-1">{{ book.description|default:"No description provided." }}</p>
+        </div>
 
-<p><strong>Description:</strong> {{ book.description|default:"No description" }}</p>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
 
-<form method="post">
-    {% csrf_token %}
+            <div>
+                <label for="days" class="block text-sm font-medium text-slate-700 mb-1">
+                    Loan Duration (Days, 1 to 30) <span class="text-rose-500">*</span>
+                </label>
+                <input type="number" id="days" name="days" value="14" min="1" max="30" required
+                    class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                <p class="text-xs text-slate-400 mt-1">Standard loan period is 14 days.</p>
+            </div>
 
-    <p>
-        <label for="days">Borrow period (days, max 30):</label><br>
-        <input type="number" id="days" name="days" value="14" min="1" max="30" required>
-    </p>
-
-    <button type="submit">Confirm Order</button>
-    <a href="{% url 'book_detail' book.id %}">Cancel</a>
-</form>
+            <div class="flex items-center space-x-3 pt-4 border-t border-slate-100">
+                <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
+                    Confirm & Place Order
+                </button>
+                <a href="{% url 'book_detail' book.id %}" class="px-5 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

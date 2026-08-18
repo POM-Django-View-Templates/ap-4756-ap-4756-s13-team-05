@@ -3,58 +3,89 @@
 {% block title %}My Orders - Library{% endblock %}
 
 {% block content %}
-<h1>My Orders</h1>
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">My Borrowed Books</h1>
+            <p class="text-slate-500 text-sm mt-1">Track your active reading loans and return history</p>
+        </div>
+        <a href="{% url 'book_list' %}" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
+            Browse Catalog
+        </a>
+    </div>
 
-{% if messages %}
-{% for message in messages %}
-{% if message.tags == 'error' %}
-<p style="color: red;">{{ message }}</p>
-{% else %}
-<p style="color: green;">{{ message }}</p>
-{% endif %}
-{% endfor %}
-{% endif %}
+    {% if messages %}
+        <div class="space-y-2">
+            {% for message in messages %}
+                <div class="p-4 rounded-xl text-sm font-medium border flex items-center space-x-2 {% if message.tags == 'error' %}bg-rose-50 border-rose-200 text-rose-700{% else %}bg-emerald-50 border-emerald-200 text-emerald-700{% endif %}">
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
-{% if orders %}
-<table border="1" cellpadding="6" cellspacing="0">
-    <thead>
-        <tr>
-            <th>Order ID</th>
-            <th>Book Title</th>
-            <th>Ordered Date</th>
-            <th>Planned Return Date</th>
-            <th>Actual Return Date</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for order in orders %}
-        <tr>
-            <td>{{ order.id }}</td>
-            <td>
-                <a href="{% url 'book_detail' order.book.id %}"><strong>{{ order.book.name }}</strong></a>
-            </td>
-            <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
-            <td>{{ order.plated_end_at|date:"Y-m-d H:i" }}</td>
-            <td>
-                {% if order.end_at %}
-                {{ order.end_at|date:"Y-m-d H:i" }}
-                {% else %}
-                <em>Not returned yet</em>
-                {% endif %}
-            </td>
-            <td>
-                {% if order.end_at %}
-                <span style="color: green;">Returned (Closed)</span>
-                {% else %}
-                <span style="color: orange;">Active (In Reading)</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>You have not placed any orders yet. <a href="{% url 'book_list' %}">Browse books</a></p>
-{% endif %}
+    {% if orders %}
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4">Order ID</th>
+                            <th class="px-6 py-4">Book Title</th>
+                            <th class="px-6 py-4">Borrowed At</th>
+                            <th class="px-6 py-4">Planned Return</th>
+                            <th class="px-6 py-4">Returned At</th>
+                            <th class="px-6 py-4 text-right">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for order in orders %}
+                            <tr class="hover:bg-slate-50/75 transition">
+                                <td class="px-6 py-4 font-mono text-xs text-slate-400">#{{ order.id }}</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900">
+                                    <a href="{% url 'book_detail' order.book.id %}" class="hover:text-indigo-600 transition">
+                                        {{ order.book.name }}
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500">{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                                <td class="px-6 py-4 text-slate-500">{{ order.plated_end_at|date:"Y-m-d H:i" }}</td>
+                                <td class="px-6 py-4 text-slate-500">
+                                    {% if order.end_at %}
+                                        {{ order.end_at|date:"Y-m-d H:i" }}
+                                    {% else %}
+                                        <span class="text-xs text-slate-400 italic">Not returned</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    {% if order.end_at %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                            Returned
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                            Active
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+            </div>
+            <h3 class="text-base font-semibold text-slate-900">No active orders</h3>
+            <p class="text-sm text-slate-500 mt-1 mb-4">You haven't borrowed any books from the library yet.</p>
+            <a href="{% url 'book_list' %}" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
+                Browse Books Catalog
+            </a>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

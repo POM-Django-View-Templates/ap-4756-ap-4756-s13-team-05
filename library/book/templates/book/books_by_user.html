@@ -1,39 +1,67 @@
 {% extends 'base.html' %}
 
-{% block title %}Books provided to user - Library{% endblock %}
+{% block title %}Books Provided to User - Library{% endblock %}
 
 {% block content %}
-    <h1>Books Currently Provided to User #{{ target_user.id }}</h1>
-    <p><strong>User:</strong> {{ target_user.first_name }} {{ target_user.last_name }} ({{ target_user.email }})</p>
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Books Borrowed by User #{{ target_user.id }}</h1>
+            <p class="text-slate-500 text-sm mt-1">
+                <strong>{{ target_user.first_name }} {{ target_user.last_name }}</strong> ({{ target_user.email }})
+            </p>
+        </div>
+        <a href="{% url 'user_list' %}" class="text-sm text-slate-600 hover:text-slate-900 transition">
+            ← Back to Users List
+        </a>
+    </div>
 
     {% if active_orders %}
-        <table border="1" cellpadding="6" cellspacing="0">
-            <thead>
-                <tr>
-                    <th>Order ID</th>
-                    <th>Book Title</th>
-                    <th>Borrowed Date</th>
-                    <th>Planned Return Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for order in active_orders %}
-                    <tr>
-                        <td>{{ order.id }}</td>
-                        <td>
-                            <a href="{% url 'book_detail' order.book.id %}">{{ order.book.name }}</a>
-                        </td>
-                        <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
-                        <td>{{ order.plated_end_at|date:"Y-m-d H:i" }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4">Order ID</th>
+                            <th class="px-6 py-4">Book Title</th>
+                            <th class="px-6 py-4">Borrowed Date</th>
+                            <th class="px-6 py-4">Planned Return Deadline</th>
+                            <th class="px-6 py-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for order in active_orders %}
+                            <tr class="hover:bg-slate-50/75 transition">
+                                <td class="px-6 py-4 font-mono text-xs text-slate-400">#{{ order.id }}</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900">
+                                    <a href="{% url 'book_detail' order.book.id %}" class="hover:text-indigo-600 transition">
+                                        {{ order.book.name }}
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500">{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                        {{ order.plated_end_at|date:"Y-m-d H:i" }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <form method="post" action="{% url 'order_close' order.id %}" class="inline" onsubmit="return confirm('Return book and close order #{{ order.id }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-medium rounded-lg transition">
+                                            Return Book
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     {% else %}
-        <p>This user currently has no borrowed books.</p>
+        <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 text-slate-500">
+            This user currently has no borrowed (unreturned) books.
+        </div>
     {% endif %}
-
-    <p>
-        <a href="{% url 'book_list' %}">← Back to Books</a>
-    </p>
+</div>
 {% endblock %}

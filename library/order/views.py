@@ -33,8 +33,7 @@ def order_create(request: HttpRequest, book_id: int) -> HttpResponse:
     book = get_object_or_404(Book, pk=book_id)
 
     # Check available copies
-    active_orders_count = Order.objects.filter(book=book, end_at__isnull=True).count()
-    if active_orders_count >= book.count:
+    if book.available_count <= 0:
         messages.error(request, f'Sorry, all copies of "{book.name}" are currently borrowed.')
         return redirect('book_detail', book_id=book.id)
 
