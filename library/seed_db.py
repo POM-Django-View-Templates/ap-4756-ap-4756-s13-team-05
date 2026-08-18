@@ -19,10 +19,8 @@ CLOSED_ORDER_PLATED_DAYS_AGO = 5
 CLOSED_ORDER_END_DAYS_AGO = 2
 
 
-def seed_data():
-    print("[*] Starting database seeding...")
-
-    # 1. Create Users
+def _seed_users() -> dict[str, CustomUser]:
+    """Create initial users and return dictionary of created user models."""
     users_data = [
         {
             "email": "librarian@library.com",
@@ -75,8 +73,11 @@ def seed_data():
         else:
             print(f"  - User already exists: {user.email}")
         created_users[u_data["email"]] = user
+    return created_users
 
-    # 2. Create Authors
+
+def _seed_authors() -> dict[str, Author]:
+    """Create initial authors and return dictionary mapping surname to Author instance."""
     authors_data = [
         {"name": "Taras", "surname": "Shevchenko", "patronymic": "Hryhorovych"},
         {"name": "Ivan", "surname": "Franko", "patronymic": "Yakovych"},
@@ -100,8 +101,11 @@ def seed_data():
         else:
             print(f"  - Author already exists: {author.name} {author.surname}")
         created_authors[a_data["surname"]] = author
+    return created_authors
 
-    # 3. Create Books
+
+def _seed_books(created_authors: dict[str, Author]) -> dict[str, Book]:
+    """Create sample book catalog and attach author relations."""
     books_data = [
         {
             "name": "Kobzar",
@@ -168,7 +172,6 @@ def seed_data():
                 "count": b_data["count"]
             }
         )
-        # Link authors
         for a_surname in b_data["authors"]:
             if a_surname in created_authors:
                 book.authors.add(created_authors[a_surname])
@@ -178,15 +181,17 @@ def seed_data():
         else:
             print(f"  - Book already exists: '{book.name}'")
         created_books[b_data["name"]] = book
+    return created_books
 
-    # 4. Create Sample Orders
+
+def _seed_orders(created_users: dict[str, CustomUser], created_books: dict[str, Book]) -> None:
+    """Create sample active and returned orders."""
     now = timezone.now()
     reader_user = created_users.get("reader@library.com")
     alice_user = created_users.get("alice@library.com")
     bob_user = created_users.get("bob@library.com")
 
     if reader_user and "Kobzar" in created_books:
-        # Active order
         if not Order.objects.filter(user=reader_user, book=created_books["Kobzar"]).exists():
             Order.objects.create(
                 user=reader_user,
@@ -197,7 +202,6 @@ def seed_data():
             print("  + Created active order for reader@library.com: 'Kobzar'")
 
     if alice_user and "1984" in created_books:
-        # Active order
         if not Order.objects.filter(user=alice_user, book=created_books["1984"]).exists():
             Order.objects.create(
                 user=alice_user,
@@ -208,7 +212,6 @@ def seed_data():
             print("  + Created active order for alice@library.com: '1984'")
 
     if bob_user and "Clean Code: A Handbook of Agile Software Craftsmanship" in created_books:
-        # Closed order (already returned)
         if not Order.objects.filter(user=bob_user, book=created_books["Clean Code: A Handbook of Agile Software Craftsmanship"]).exists():
             Order.objects.create(
                 user=bob_user,
@@ -218,6 +221,13 @@ def seed_data():
             )
             print("  + Created closed order for bob@library.com: 'Clean Code'")
 
+
+def seed_data():
+    print("[*] Starting database seeding...")
+    created_users = _seed_users()
+    created_authors = _seed_authors()
+    created_books = _seed_books(created_authors)
+    _seed_orders(created_users, created_books)
     print("\nDatabase successfully populated with sample data!")
 
 

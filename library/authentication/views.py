@@ -8,8 +8,9 @@ from .models import CustomUser, ROLE_VISITOR, ROLE_LIBRARIAN
 def index(request):
     return render(request, 'authentication/index.html')
 
-def register(request):
-    context = {
+def _get_register_context() -> dict:
+    """Return default context for the registration page."""
+    return {
         "role_visitor": ROLE_VISITOR,
         "role_librarian": ROLE_LIBRARIAN,
         "first_name_max_len": CustomUser.FIRST_NAME_MAX_LEN,
@@ -18,69 +19,74 @@ def register(request):
         "email_max_len": CustomUser.EMAIL_MAX_LEN,
     }
 
+
+def _parse_role(role_raw: str) -> int:
+    """Parse and validate user role integer, defaulting to visitor."""
+    try:
+        role = int(role_raw)
+        return role if role in (ROLE_VISITOR, ROLE_LIBRARIAN) else ROLE_VISITOR
+    except (ValueError, TypeError):
+        return ROLE_VISITOR
+
+
+def _extract_register_data(post_data) -> dict:
+    """Extract and sanitize form input from registration POST request."""
+    return {
+        "first_name": post_data.get("first_name", "").strip(),
+        "last_name": post_data.get("last_name", "").strip(),
+        "middle_name": post_data.get("middle_name", "").strip(),
+        "email": post_data.get("email", "").strip().lower(),
+        "password": post_data.get("password", ""),
+        "confirm_password": post_data.get("confirm_password", ""),
+        "role": _parse_role(post_data.get("role", str(ROLE_VISITOR))),
+    }
+
+
+def _validate_register_data(form_data: dict) -> str | None:
+    """Validate registration credentials and uniqueness."""
+    if not form_data["email"] or not form_data["password"]:
+        return "Email and password are required."
+    if form_data["password"] != form_data["confirm_password"]:
+        return "Passwords do not match."
+    if CustomUser.objects.filter(email=form_data["email"]).exists():
+        return "User with this email already exists."
+    return None
+
+
+def register(request: HttpRequest) -> HttpResponse:
+    context = _get_register_context()
     if request.method == "GET":
         return render(request, "authentication/register.html", context)
 
-    first_name = request.POST.get("first_name", "").strip()
-    last_name = request.POST.get("last_name", "").strip()
-    middle_name = request.POST.get("middle_name", "").strip()
-    email = request.POST.get("email", "").strip().lower()
-    password = request.POST.get("password", "")
-    confirm_password = request.POST.get("confirm_password", "")
-    role_raw = request.POST.get("role", str(ROLE_VISITOR))
-
-    error = None
-
-    if not email or not password:
-        error = "Email and password are required."
-    elif password != confirm_password:
-        error = "Passwords do not match."
-    elif CustomUser.objects.filter(email=email).exists():
-        error = "User with this email already exists."
-
-    try:
-        role = int(role_raw)
-        if role not in (ROLE_VISITOR, ROLE_LIBRARIAN):
-            role = ROLE_VISITOR
-    except ValueError:
-        role = ROLE_VISITOR
+    form_data = _extract_register_data(request.POST)
+    error = _validate_register_data(form_data)
 
     if error:
-        context.update({
-            "error": error,
-            "form_data": {
-                "first_name": first_name,
-                "last_name": last_name,
-                "middle_name": middle_name,
-                "email": email,
-                "role": role,
-            },
-        })
+        context.update({"error": error, "form_data": form_data})
         return render(request, "authentication/register.html", context)
 
     user = CustomUser.objects.create_user(
-        email=email,
-        password=password,
-        first_name=first_name,
-        last_name=last_name,
-        middle_name=middle_name,
-        role=role,
-        is_active=True,  # important: otherwise login may fail
+        email=form_data["email"],
+        password=form_data["password"],
+        first_name=form_data["first_name"],
+        last_name=form_data["last_name"],
+        middle_name=form_data["middle_name"],
+        role=form_data["role"],
+        is_active=True,
     )
 
     auth_login(request, user)
     return redirect("home")
 
-def login(request):
+
+def login(request: HttpRequest) -> HttpResponse:
     if request.method == "GET":
         return render(request, "authentication/login.html")
 
     email = request.POST.get("email", "").strip().lower()
     password = request.POST.get("password", "")
 
-    # For Django auth backends, pass username=... even with custom USERNAME_FIELD
     user = authenticate(request, username=email, password=password)
-
     if user is None:
         return render(
             request,

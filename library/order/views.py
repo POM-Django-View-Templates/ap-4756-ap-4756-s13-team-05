@@ -12,6 +12,44 @@ MIN_BORROW_DAYS = 1
 MAX_BORROW_DAYS = 30
 
 
+def _check_borrow_eligibility(request: HttpRequest, book: Book) -> bool:
+    """Verify if user can borrow the book (copies in stock and no active duplicate order)."""
+    if book.available_count <= 0:
+        messages.error(request, f'Sorry, all copies of "{book.name}" are currently borrowed.')
+        return False
+
+    already_borrowed = Order.objects.filter(user=request.user, book=book, end_at__isnull=True).exists()
+    if already_borrowed:
+        messages.error(request, f'You already have an active order for "{book.name}".')
+        return False
+
+    return True
+
+
+def _parse_loan_days(days_raw: str | None) -> int:
+    """Parse loan duration input within allowed minimum and maximum constraints."""
+    if not days_raw:
+        return DEFAULT_BORROW_DAYS
+    try:
+        days_count = int(days_raw)
+        if MIN_BORROW_DAYS <= days_count <= MAX_BORROW_DAYS:
+            return days_count
+        return DEFAULT_BORROW_DAYS
+    except (ValueError, TypeError):
+        return DEFAULT_BORROW_DAYS
+
+
+def _close_order(request: HttpRequest, order_id: int) -> None:
+    """Close active order by recording end_at timestamp."""
+    order = get_object_or_404(Order, pk=order_id)
+    if order.end_at is None:
+        order.end_at = timezone.now()
+        order.save()
+        messages.success(request, f'Order #{order.id} closed (Book returned).')
+    else:
+        messages.info(request, f'Order #{order.id} was already closed.')
+
+
 def order_my(request: HttpRequest) -> HttpResponse:
     if not request.user.is_authenticated:
         return redirect('login')
@@ -23,7 +61,6 @@ def order_my(request: HttpRequest) -> HttpResponse:
 def order_all(request: HttpRequest) -> HttpResponse:
     if not request.user.is_authenticated:
         return redirect('login')
-    # For librarian only
     if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
         return redirect('home')
 
@@ -36,35 +73,18 @@ def order_create(request: HttpRequest, book_id: int) -> HttpResponse:
         return redirect('login')
 
     book = get_object_or_404(Book, pk=book_id)
-
-    # Check available copies
-    if book.available_count <= 0:
-        messages.error(request, f'Sorry, all copies of "{book.name}" are currently borrowed.')
-        return redirect('book_detail', book_id=book.id)
-
-    # Check if user already has an active order for this book
-    already_borrowed = Order.objects.filter(user=request.user, book=book, end_at__isnull=True).exists()
-    if already_borrowed:
-        messages.error(request, f'You already have an active order for "{book.name}".')
+    if not _check_borrow_eligibility(request, book):
         return redirect('book_detail', book_id=book.id)
 
     if request.method == 'POST':
-        days = request.POST.get('days', str(DEFAULT_BORROW_DAYS))
-        try:
-            days_count = int(days)
-            if days_count < MIN_BORROW_DAYS or days_count > MAX_BORROW_DAYS:
-                days_count = DEFAULT_BORROW_DAYS
-        except ValueError:
-            days_count = DEFAULT_BORROW_DAYS
-
+        days_count = _parse_loan_days(request.POST.get('days'))
         plated_end_at = timezone.now() + datetime.timedelta(days=days_count)
 
         order = Order.create(user=request.user, book=book, plated_end_at=plated_end_at)
         if order:
             messages.success(request, f'Order for "{book.name}" created successfully!')
             return redirect('order_my')
-        else:
-            messages.error(request, 'Could not create order. Please try again.')
+        messages.error(request, 'Could not create order. Please try again.')
 
     return render(request, 'order/order_create.html', {
         'book': book,
@@ -82,12 +102,6 @@ def order_close(request: HttpRequest, order_id: int) -> HttpResponse:
         return redirect('home')
 
     if request.method == 'POST':
-        order = get_object_or_404(Order, pk=order_id)
-        if order.end_at is None:
-            order.end_at = timezone.now()
-            order.save()
-            messages.success(request, f'Order #{order.id} closed (Book returned).')
-        else:
-            messages.info(request, f'Order #{order.id} was already closed.')
+        _close_order(request, order_id)
 
     return redirect('order_all')

@@ -5,8 +5,37 @@ from authentication.models import ROLE_LIBRARIAN
 from .models import Author
 
 
+def _validate_author_data(name: str, surname: str, patronymic: str) -> str | None:
+    """Validate author fields presence and length limits."""
+    if not name or not surname or not patronymic:
+        return "All fields (Name, Surname, Middle name) are required."
+    if (
+        len(name) > Author.NAME_MAX_LEN
+        or len(surname) > Author.SURNAME_MAX_LEN
+        or len(patronymic) > Author.PATRONYMIC_MAX_LEN
+    ):
+        return f"Field length cannot exceed {Author.NAME_MAX_LEN} characters."
+    return None
+
+
+def _delete_author(request: HttpRequest, author_id: int) -> None:
+    """Attempt to delete an author if not attached to any books."""
+    author = Author.get_by_id(author_id)
+    if not author:
+        messages.error(request, "Author not found.")
+        return
+
+    if author.books.exists():
+        messages.error(
+            request,
+            f'Cannot delete author "{author.name} {author.surname}" because they are attached to one or more books.',
+        )
+    else:
+        Author.delete_by_id(author_id)
+        messages.success(request, f'Author "{author.name} {author.surname}" was successfully deleted.')
+
+
 def author_list(request: HttpRequest) -> HttpResponse:
-    # Check role
     if not request.user.is_authenticated:
         return redirect('login')
     if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
@@ -28,16 +57,8 @@ def author_create(request: HttpRequest) -> HttpResponse:
         surname = request.POST.get('surname', '').strip()
         patronymic = request.POST.get('patronymic', '').strip()
 
-        # Validation
-        if not name or not surname or not patronymic:
-            error = 'All fields (Name, Surname, Middle name) are required.'
-        elif (
-            len(name) > Author.NAME_MAX_LEN
-            or len(surname) > Author.SURNAME_MAX_LEN
-            or len(patronymic) > Author.PATRONYMIC_MAX_LEN
-        ):
-            error = f'Field length cannot exceed {Author.NAME_MAX_LEN} characters.'
-        else:
+        error = _validate_author_data(name, surname, patronymic)
+        if not error:
             Author.create(name=name, surname=surname, patronymic=patronymic)
             return redirect('author_list')
 
@@ -57,16 +78,6 @@ def author_delete(request: HttpRequest, author_id: int) -> HttpResponse:
         return redirect('home')
 
     if request.method == 'POST':
-        author = Author.get_by_id(author_id)
-        if not author:
-            messages.error(request, 'Author not found.')
-            return redirect('author_list')
-
-        # Delete if don't have books
-        if author.books.exists():
-            messages.error(request, f'Cannot delete author "{author.name} {author.surname}" because they are attached to one or more books.')
-        else:
-            Author.delete_by_id(author_id)
-            messages.success(request, f'Author "{author.name} {author.surname}" was successfully deleted.')
+        _delete_author(request, author_id)
 
     return redirect('author_list')

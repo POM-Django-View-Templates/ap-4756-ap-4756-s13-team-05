@@ -8,6 +8,42 @@ from authentication.models import CustomUser, ROLE_LIBRARIAN
 from order.models import Order
 
 
+def _filter_books(query: str, author_id: str):
+    """Filter book queryset by search query and/or author ID."""
+    books = Book.objects.prefetch_related('authors').all()
+
+    if query:
+        books = books.filter(Q(name__icontains=query) | Q(description__icontains=query))
+
+    if author_id and author_id.isdigit():
+        books = books.filter(authors__id=int(author_id))
+
+    return books.distinct().order_by('id')
+
+
+def _validate_book_data(name: str, description: str, count: str) -> str | None:
+    """Validate book fields for creation."""
+    if not name:
+        return 'Book name is required.'
+    if len(name) > Book.NAME_MAX_LEN:
+        return f'Book name cannot exceed {Book.NAME_MAX_LEN} characters.'
+    if len(description) > Book.DESCRIPTION_MAX_LEN:
+        return f'Description cannot exceed {Book.DESCRIPTION_MAX_LEN} characters.'
+    if not count.isdigit() or int(count) < 0:
+        return 'Count must be a positive integer.'
+    return None
+
+
+def _create_book(name: str, description: str, count: str, selected_authors_ids: list[str]) -> Book:
+    """Create book instance and attach selected authors."""
+    book = Book(name=name, description=description, count=int(count))
+    book.save()
+    if selected_authors_ids:
+        selected_authors = Author.objects.filter(id__in=selected_authors_ids)
+        book.authors.set(selected_authors)
+    return book
+
+
 def book_list(request: HttpRequest) -> HttpResponse:
     if not request.user.is_authenticated:
         return redirect('login')
@@ -15,17 +51,7 @@ def book_list(request: HttpRequest) -> HttpResponse:
     query = request.GET.get('q', '').strip()
     author_id = request.GET.get('author_id', '').strip()
 
-    books = Book.objects.prefetch_related('authors').all()
-
-    # Filter by name and description
-    if query:
-        books = books.filter(Q(name__icontains=query) | Q(description__icontains=query))
-
-    # Filter by author
-    if author_id and author_id.isdigit():
-        books = books.filter(authors__id=int(author_id))
-
-    books = books.distinct().order_by('id')
+    books = _filter_books(query, author_id)
     authors = Author.objects.all().order_by('surname', 'name')
 
     return render(request, 'book/book_list.html', {
@@ -45,7 +71,6 @@ def book_detail(request: HttpRequest, book_id: int) -> HttpResponse:
 
 
 def book_create(request: HttpRequest) -> HttpResponse:
-    # Only for librarian
     if not request.user.is_authenticated:
         return redirect('login')
     if getattr(request.user, 'role', None) != ROLE_LIBRARIAN:
@@ -60,21 +85,9 @@ def book_create(request: HttpRequest) -> HttpResponse:
         count = request.POST.get('count', str(Book.DEFAULT_COUNT)).strip()
         selected_authors_ids = request.POST.getlist('authors')
 
-        if not name:
-            error = 'Book name is required.'
-        elif len(name) > Book.NAME_MAX_LEN:
-            error = f'Book name cannot exceed {Book.NAME_MAX_LEN} characters.'
-        elif len(description) > Book.DESCRIPTION_MAX_LEN:
-            error = f'Description cannot exceed {Book.DESCRIPTION_MAX_LEN} characters.'
-        elif not count.isdigit() or int(count) < 0:
-            error = 'Count must be a positive integer.'
-        else:
-            book = Book(name=name, description=description, count=int(count))
-            book.save()
-            if selected_authors_ids:
-                selected_authors = Author.objects.filter(id__in=selected_authors_ids)
-                book.authors.set(selected_authors)
-
+        error = _validate_book_data(name, description, count)
+        if not error:
+            book = _create_book(name, description, count, selected_authors_ids)
             messages.success(request, f'Book "{book.name}" created successfully.')
             return redirect('book_list')
 
