@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Book - Library{% endblock %}
+
+{% block content %}
+    <h1>Add New Book</h1>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <p>
+            <label for="name">Title:</label><br>
+            <input type="text" id="name" name="name" maxlength="128" required value="{{ form_data.name|default:'' }}">
+        </p>
+
+        <p>
+            <label for="description">Description:</label><br>
+            <textarea id="description" name="description" rows="4" cols="40">{{ form_data.description|default:'' }}</textarea>
+        </p>
+
+        <p>
+            <label for="count">Count (number of copies):</label><br>
+            <input type="number" id="count" name="count" min="0" value="{{ form_data.count|default:'10' }}">
+        </p>
+
+        <p>
+            <label for="authors">Select Authors (hold Ctrl to select multiple):</label><br>
+            <select id="authors" name="authors" multiple size="5">
+                {% for author in authors %}
+                    <option value="{{ author.id }}">
+                        {{ author.name }} {{ author.surname }}
+                    </option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <button type="submit">Save Book</button>
+        <a href="{% url 'book_list' %}">Cancel</a>
+    </form>
+{% endblock %}

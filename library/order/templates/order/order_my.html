@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}My Orders - Library{% endblock %}
+
+{% block content %}
+<h1>My Orders</h1>
+
+{% if messages %}
+{% for message in messages %}
+{% if message.tags == 'error' %}
+<p style="color: red;">{{ message }}</p>
+{% else %}
+<p style="color: green;">{{ message }}</p>
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if orders %}
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Order ID</th>
+            <th>Book Title</th>
+            <th>Ordered Date</th>
+            <th>Planned Return Date</th>
+            <th>Actual Return Date</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>
+                <a href="{% url 'book_detail' order.book.id %}"><strong>{{ order.book.name }}</strong></a>
+            </td>
+            <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ order.plated_end_at|date:"Y-m-d H:i" }}</td>
+            <td>
+                {% if order.end_at %}
+                {{ order.end_at|date:"Y-m-d H:i" }}
+                {% else %}
+                <em>Not returned yet</em>
+                {% endif %}
+            </td>
+            <td>
+                {% if order.end_at %}
+                <span style="color: green;">Returned (Closed)</span>
+                {% else %}
+                <span style="color: orange;">Active (In Reading)</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>You have not placed any orders yet. <a href="{% url 'book_list' %}">Browse books</a></p>
+{% endif %}
+{% endblock %}

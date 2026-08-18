@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}All Orders - Library{% endblock %}
+
+{% block content %}
+<h1>All Library Orders</h1>
+
+{% if messages %}
+{% for message in messages %}
+{% if message.tags == 'error' %}
+<p style="color: red;">{{ message }}</p>
+{% else %}
+<p style="color: green;">{{ message }}</p>
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if orders %}
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Book</th>
+            <th>Ordered At</th>
+            <th>Planned Return</th>
+            <th>Returned At</th>
+            <th>Status / Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>
+                <a href="{% url 'user_detail' order.user.id %}">
+                    {{ order.user.email }} ({{ order.user.first_name }} {{ order.user.last_name }})
+                </a>
+            </td>
+            <td>
+                <a href="{% url 'book_detail' order.book.id %}">{{ order.book.name }}</a>
+            </td>
+            <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ order.plated_end_at|date:"Y-m-d H:i" }}</td>
+            <td>
+                {% if order.end_at %}
+                {{ order.end_at|date:"Y-m-d H:i" }}
+                {% else %}
+                <em>Pending return</em>
+                {% endif %}
+            </td>
+            <td>
+                {% if order.end_at %}
+                <span style="color: green;">Closed</span>
+                {% else %}
+                <form method="post" action="{% url 'order_close' order.id %}" style="display: inline;"
+                    onsubmit="return confirm('Confirm book return and close order #{{ order.id }}?');">
+                    {% csrf_token %}
+                    <button type="submit">Close Order (Return)</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No orders in the database.</p>
+{% endif %}
+{% endblock %}

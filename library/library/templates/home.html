@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Home Page{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+<p>Welcome to the library, {{ request.user.first_name|default:request.user.email }}!</p>
+
+{% if request.user.role == 1 %}
+<p><em>You are logged in as a Librarian. You have access to manage books, authors, orders, and users.</em></p>
+{% else %}
+<p><em>You are logged in as a Reader. You can browse the book catalog and manage your orders.</em></p>
+{% endif %}
+{% endblock %}

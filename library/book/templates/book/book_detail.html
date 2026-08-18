@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ book.name }} - Book Details{% endblock %}
+
+{% block content %}
+<h1>Book Details</h1>
+
+{% if messages %}
+{% for message in messages %}
+<p style="color: red;">{{ message }}</p>
+{% endfor %}
+{% endif %}
+
+<p><strong>Title:</strong> {{ book.name }}</p>
+<p><strong>Description:</strong> {{ book.description|default:"No description provided." }}</p>
+<p><strong>Copies in Library:</strong> {{ book.count }}</p>
+
+<h3>Authors:</h3>
+{% if book.authors.all %}
+<ul>
+    {% for author in book.authors.all %}
+    <li>{{ author.name }} {{ author.patronymic }} {{ author.surname }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p><em>No author specified.</em></p>
+{% endif %}
+
+<hr>
+
+{% if request.user.role == 0 %}
+<p>
+    <a href="{% url 'order_create' book.id %}">
+        <button type="button">Order this book</button>
+    </a>
+</p>
+{% endif %}
+
+<p>
+    <a href="{% url 'book_list' %}">← Back to Books Catalog</a>
+</p>
+{% endblock %}

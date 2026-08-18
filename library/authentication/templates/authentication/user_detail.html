@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}User Profile #{{ target_user.id }} - Library{% endblock %}
+
+{% block content %}
+<h1>User Profile: {{ target_user.email }}</h1>
+
+<p><strong>User ID:</strong> {{ target_user.id }}</p>
+<p><strong>First Name:</strong> {{ target_user.first_name|default:"-" }}</p>
+<p><strong>Last Name:</strong> {{ target_user.last_name|default:"-" }}</p>
+<p><strong>Middle Name:</strong> {{ target_user.middle_name|default:"-" }}</p>
+<p><strong>Email:</strong> {{ target_user.email }}</p>
+<p><strong>Role:</strong>
+    {% if target_user.role == 1 %}
+    Librarian (Admin)
+    {% else %}
+    Reader (Visitor)
+    {% endif %}
+</p>
+<p><strong>Registered At:</strong> {{ target_user.created_at|date:"Y-m-d H:i" }}</p>
+
+<hr>
+
+{% if request.user.role == 1 %}
+<p>
+    <a href="{% url 'books_by_user' target_user.id %}">→ View books currently borrowed by this user</a>
+</p>
+<p>
+    <a href="{% url 'user_list' %}">← Back to Users List</a>
+</p>
+{% else %}
+<p>
+    <a href="{% url 'home' %}">← Back to Dashboard</a>
+</p>
+{% endif %}
+{% endblock %}

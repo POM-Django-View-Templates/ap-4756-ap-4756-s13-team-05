@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Users List - Library{% endblock %}
+
+{% block content %}
+<h1>All Users</h1>
+
+{% if users %}
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Full Name</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td><strong>{{ user.email }}</strong></td>
+            <td>{{ user.first_name }} {{ user.middle_name }} {{ user.last_name }}</td>
+            <td>
+                {% if user.role == 1 %}
+                <strong>Librarian</strong>
+                {% else %}
+                Reader
+                {% endif %}
+            </td>
+            <td>
+                {% if user.is_active %}Active{% else %}Inactive{% endif %}
+            </td>
+            <td>
+                <a href="{% url 'user_detail' user.id %}">View Profile</a>
+                |
+                <a href="{% url 'books_by_user' user.id %}">View Borrowed Books</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No users found.</p>
+{% endif %}
+{% endblock %}

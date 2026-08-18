@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Books Catalog - Library{% endblock %}
+
+{% block content %}
+<h1>Books Catalog</h1>
+
+{% if request.user.role == 1 %}
+<p><a href="{% url 'book_create' %}">+ Add New Book</a></p>
+{% endif %}
+
+{% if messages %}
+{% for message in messages %}
+<p style="color: green;">{{ message }}</p>
+{% endfor %}
+{% endif %}
+
+<!-- Форма фільтрації та пошуку -->
+<form method="get" action="{% url 'book_list' %}">
+    <label for="q">Search by title/description:</label>
+    <input type="text" id="q" name="q" value="{{ query }}" placeholder="Enter book title...">
+
+    <label for="author_id">Filter by author:</label>
+    <select id="author_id" name="author_id">
+        <option value="">All Authors</option>
+        {% for author in authors %}
+        <option value="{{ author.id }}" {% if selected_author_id == author.id %}selected{% endif %}>
+            {{ author.name }} {{ author.surname }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Filter</button>
+    <a href="{% url 'book_list' %}">Reset</a>
+</form>
+
+<br>
+
+{% if books %}
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Authors</th>
+            <th>Available Count</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for book in books %}
+        <tr>
+            <td>{{ book.id }}</td>
+            <td><strong>{{ book.name }}</strong></td>
+            <td>
+                {% if book.authors.all %}
+                {% for author in book.authors.all %}
+                {{ author.name }} {{ author.surname }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+                {% else %}
+                <em>No authors</em>
+                {% endif %}
+            </td>
+            <td>{{ book.count }}</td>
+            <td>
+                <a href="{% url 'book_detail' book.id %}">View Details</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No books found matching your criteria.</p>
+{% endif %}
+{% endblock %}
